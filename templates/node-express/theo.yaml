@@ -1,0 +1,9 @@
+version: 1
+project: "{{project-name}}"
+
+apps:
+  api:
+    path: .
+    framework: express
+    type: server
+    port: 3000

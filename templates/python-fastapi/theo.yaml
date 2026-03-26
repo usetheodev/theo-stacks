@@ -1,0 +1,9 @@
+version: 1
+project: "{{project-name}}"
+
+apps:
+  api:
+    path: .
+    framework: fastapi
+    type: server
+    port: 8000

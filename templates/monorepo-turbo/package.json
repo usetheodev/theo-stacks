@@ -1,0 +1,14 @@
+{
+  "name": "{{project-name}}",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  }
+}

@@ -1,0 +1,9 @@
+version: 1
+project: "{{project-name}}"
+
+apps:
+  api:
+    path: .
+    framework: fastify
+    type: server
+    port: 3000

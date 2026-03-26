@@ -1,0 +1,15 @@
+version: 1
+project: "{{project-name}}"
+
+apps:
+  api:
+    path: apps/api
+    framework: express
+    type: server
+    port: 3001
+
+  web:
+    path: apps/web
+    framework: nextjs
+    type: frontend
+    render: server

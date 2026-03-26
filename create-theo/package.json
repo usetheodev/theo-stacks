@@ -1,0 +1,43 @@
+{
+  "name": "create-theo",
+  "version": "0.1.0",
+  "description": "Create a new Theo project with zero config",
+  "type": "module",
+  "bin": {
+    "create-theo": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "node scripts/copy-templates.js && tsc",
+    "dev": "tsc --watch",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "theo",
+    "deploy",
+    "paas",
+    "kubernetes",
+    "scaffold",
+    "create"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/usetheo/theo-monorepos"
+  },
+  "homepage": "https://usetheo.dev",
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.6.0",
+    "@types/jest": "^29.5.0"
+  }
+}
