@@ -1,5 +1,6 @@
 node_modules/
 dist/
 templates/
+README.md
 .env
 *.log

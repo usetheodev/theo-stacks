@@ -1,4 +1,4 @@
-import { cpSync, rmSync, existsSync } from "node:fs";
+import { cpSync, copyFileSync, rmSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,3 +16,8 @@ cpSync(src, dest, {
 });
 
 console.log("Templates copied to create-theo/templates/");
+
+const readmeSrc = resolve(__dirname, "../../README.md");
+const readmeDest = resolve(__dirname, "../README.md");
+copyFileSync(readmeSrc, readmeDest);
+console.log("README.md copied to create-theo/");
