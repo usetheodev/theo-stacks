@@ -25,6 +25,13 @@ jobs:
           cache: npm
           cache-dependency-path: create-theo/package-lock.json
 
+      - name: Sync version from tag
+        working-directory: create-theo
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Publishing version: $VERSION"
+          npm version "$VERSION" --no-git-tag-version
+
       - name: Install dependencies
         working-directory: create-theo
         run: npm ci
