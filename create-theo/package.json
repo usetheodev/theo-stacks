@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/usetheo/theo-monorepos"
+    "url": "https://github.com/usetheodev/theo-monorepos"
   },
   "homepage": "https://usetheo.dev",
   "dependencies": {
