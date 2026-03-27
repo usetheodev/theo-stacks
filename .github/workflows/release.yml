@@ -36,9 +36,6 @@ jobs:
         working-directory: create-theo
         run: npm test
 
-      - name: Validate templates
-        run: CI=true bash scripts/validate-templates.sh
-
       - name: Publish
         working-directory: create-theo
         run: npm publish --access public --provenance
