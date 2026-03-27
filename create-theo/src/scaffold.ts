@@ -98,29 +98,26 @@ function copyDir(src: string, dest: string, projectName: string): void {
 
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
 
     if (entry.isDirectory()) {
       if (entry.name === "node_modules") continue;
+      const destPath = path.join(dest, entry.name);
       copyDir(srcPath, destPath, projectName);
     } else {
-      const finalDestPath =
-        entry.name === "gitignore"
-          ? path.join(dest, ".gitignore")
-          : destPath;
-      copyFile(srcPath, finalDestPath, projectName);
+      const destName = entry.name === "gitignore" ? ".gitignore" : entry.name;
+      const destPath = path.join(dest, destName);
+      copyFile(srcPath, destPath, projectName);
     }
   }
 }
 
 function copyFile(src: string, dest: string, projectName: string): void {
-  const ext = path.extname(src);
-  const basename = path.basename(src);
+  const ext = path.extname(dest);
+  const basename = path.basename(dest);
 
   if (isTextFile(ext, basename)) {
-    let content = fs.readFileSync(src, "utf-8");
-    content = content.replaceAll(PLACEHOLDER, projectName);
-    fs.writeFileSync(dest, content);
+    const content = fs.readFileSync(src, "utf-8");
+    fs.writeFileSync(dest, content.replaceAll(PLACEHOLDER, projectName));
   } else {
     fs.copyFileSync(src, dest);
   }
@@ -145,13 +142,13 @@ function initGit(dir: string): void {
   }
 }
 
-function installNodeDeps(dir: string): void {
+export function installNodeDeps(dir: string): void {
   const packageManager = detectPackageManager(dir);
   try {
-    execSync(`${packageManager} install`, { cwd: dir, stdio: "inherit" });
+    execSync(`${packageManager} install`, { cwd: dir, stdio: "pipe" });
   } catch {
-    console.warn(
-      `\nWarning: Failed to install dependencies. Run "${packageManager} install" manually.\n`,
+    throw new Error(
+      `Failed to install dependencies. Run "${packageManager} install" manually.`,
     );
   }
 }
@@ -210,17 +207,30 @@ function getAppDirs(targetDir: string, template: TemplateInfo): string[] {
   return [targetDir];
 }
 
+function readPackageJson(pkgPath: string): Record<string, unknown> {
+  try {
+    return JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+  } catch {
+    throw new Error(
+      `Failed to read package.json at ${pkgPath}. File may be missing or malformed.`,
+    );
+  }
+}
+
 function addDependencies(pkgDir: string, styling: StylingOption): void {
   const pkgPath = path.join(pkgDir, "package.json");
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+  const pkg = readPackageJson(pkgPath);
 
   if (Object.keys(styling.dependencies).length > 0) {
-    pkg.dependencies = { ...pkg.dependencies, ...styling.dependencies };
+    pkg.dependencies = {
+      ...(pkg.dependencies as Record<string, string>),
+      ...styling.dependencies,
+    };
   }
 
   if (Object.keys(styling.devDependencies).length > 0) {
     pkg.devDependencies = {
-      ...pkg.devDependencies,
+      ...(pkg.devDependencies as Record<string, string>),
       ...styling.devDependencies,
     };
   }
@@ -806,18 +816,18 @@ function writeEnvExample(targetDir: string): void {
 
 function applyPrisma(targetDir: string, template: TemplateInfo): void {
   const pkgPath = path.join(targetDir, "package.json");
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+  const pkg = readPackageJson(pkgPath);
 
   pkg.dependencies = {
-    ...pkg.dependencies,
+    ...(pkg.dependencies as Record<string, string>),
     "@prisma/client": "^6.0.0",
   };
   pkg.devDependencies = {
-    ...pkg.devDependencies,
+    ...(pkg.devDependencies as Record<string, string>),
     prisma: "^6.0.0",
   };
   pkg.scripts = {
-    ...pkg.scripts,
+    ...(pkg.scripts as Record<string, string>),
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",

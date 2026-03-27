@@ -2,11 +2,13 @@
 
 import path from "node:path";
 import { parseArgs } from "node:util";
+import chalk from "chalk";
+import ora from "ora";
 import { promptUser } from "./prompts.js";
-import { scaffold } from "./scaffold.js";
+import { scaffold, installNodeDeps } from "./scaffold.js";
 import { printSuccess } from "./output.js";
 import { getTemplate, listTemplateIds } from "./templates.js";
-import { getStylingOption, listStylingIds, hasFrontend } from "./styling.js";
+import { getStylingOption, listStylingIds } from "./styling.js";
 
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
@@ -34,25 +36,25 @@ async function main(): Promise<void> {
 
   if (isCI && (!nameArg || !templateArg)) {
     console.error(
-      "Error: In CI mode, --template and project name are required.",
+      chalk.red("Error: In CI mode, --template and project name are required."),
     );
     console.error(
-      "Usage: create-theo my-project --template node-express",
+      chalk.dim("Usage: create-theo my-project --template node-express"),
     );
     process.exit(1);
   }
 
   if (templateArg && !getTemplate(templateArg)) {
     const valid = listTemplateIds().join(", ");
-    console.error(`Error: Unknown template "${templateArg}".`);
-    console.error(`Available templates: ${valid}`);
+    console.error(chalk.red(`Error: Unknown template "${templateArg}".`));
+    console.error(chalk.dim(`Available templates: ${valid}`));
     process.exit(1);
   }
 
   if (stylingArg && !getStylingOption(stylingArg)) {
     const valid = listStylingIds().join(", ");
-    console.error(`Error: Unknown styling option "${stylingArg}".`);
-    console.error(`Available options: ${valid}`);
+    console.error(chalk.red(`Error: Unknown styling option "${stylingArg}".`));
+    console.error(chalk.dim(`Available options: ${valid}`));
     process.exit(1);
   }
 
@@ -65,55 +67,75 @@ async function main(): Promise<void> {
   );
   const targetDir = path.resolve(process.cwd(), projectName);
 
+  const spinner = ora({
+    text: "Scaffolding project...",
+    color: "cyan",
+  });
+
   try {
+    if (!isCI) spinner.start();
+
     scaffold({
       projectName,
       template,
       targetDir,
       styling,
       database,
-      skipInstall: isCI,
+      skipInstall: true,
       skipGit: isCI,
     });
+
+    if (!isCI) {
+      spinner.text = "Installing dependencies...";
+
+      if (template.language === "node") {
+        installNodeDeps(targetDir);
+      }
+
+      spinner.succeed(chalk.green("Done!"));
+    }
 
     printSuccess(projectName, targetDir, template, styling, database);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`\nError: ${message}`);
+    if (!isCI) {
+      spinner.fail(chalk.red("Failed"));
+    }
+    console.error(chalk.red(`\n  ${message}`));
     process.exit(1);
   }
 }
 
 function printHelp(): void {
   console.log(`
-  create-theo — Create a new Theo project
+  ${chalk.bold("create-theo")} — Scaffold a project and deploy to Kubernetes in minutes.
 
-  Usage:
+  ${chalk.bold("Usage:")}
     npm create theo@latest [project-name] [options]
 
-  Options:
+  ${chalk.bold("Options:")}
     -t, --template <id>   Template to use (skip prompt)
-    -s, --styling <id>    Styling option for frontend templates (skip prompt)
-    -d, --database        Add PostgreSQL database with ORM (Prisma/GORM/SQLAlchemy)
+    -s, --styling <id>    Styling option for frontend templates
+    -d, --database        Add PostgreSQL database with ORM
     -h, --help            Show this help message
 
-  Templates:
-    API / Backend:
+  ${chalk.bold("Templates:")}
+    ${chalk.cyan("API / Backend:")}
       node-express        Express.js API server
       node-fastify        Fastify API server
       go-api              Go API (standard library)
       python-fastapi      FastAPI + Uvicorn
       node-nestjs         NestJS API with modules
-    Frontend:
+    ${chalk.cyan("Frontend:")}
       node-nextjs         Next.js app (App Router)
-    Fullstack:
+    ${chalk.cyan("Fullstack:")}
       fullstack-nextjs    Next.js fullstack with API routes
-    Monorepo:
+    ${chalk.cyan("Monorepo:")}
       monorepo-turbo      Turborepo (Express API + Next.js)
-    Worker:
+    ${chalk.cyan("Worker:")}
       node-worker         Background job processor
 
-  Styling (for frontend templates):
+  ${chalk.bold("Styling")} (for frontend templates):
     none                  Plain CSS (default)
     tailwind              Tailwind CSS
     shadcn                Tailwind + shadcn/ui
@@ -123,15 +145,15 @@ function printHelp(): void {
     bootstrap             Bootstrap
     bulma                 Bulma
 
-  Examples:
-    npm create theo@latest
-    npm create theo@latest my-app --template node-express
-    npm create theo@latest my-app --template node-express --database
-    npm create theo@latest my-app --template node-nextjs --styling tailwind
+  ${chalk.bold("Examples:")}
+    ${chalk.dim("$")} npm create theo@latest
+    ${chalk.dim("$")} npm create theo@latest my-app --template node-express
+    ${chalk.dim("$")} npm create theo@latest my-app -t node-express -d
+    ${chalk.dim("$")} npm create theo@latest my-app -t node-nextjs -s tailwind
 `);
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(chalk.red(err instanceof Error ? err.message : String(err)));
   process.exit(1);
 });

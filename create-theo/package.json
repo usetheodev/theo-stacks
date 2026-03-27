@@ -30,8 +30,13 @@
     "url": "https://github.com/usetheodev/theo-monorepos"
   },
   "homepage": "https://usetheo.dev",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
-    "@inquirer/prompts": "^7.0.0"
+    "@inquirer/prompts": "^7.0.0",
+    "chalk": "^5.4.0",
+    "ora": "^8.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
