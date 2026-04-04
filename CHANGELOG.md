@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Hardened `.gitignore` for all 19 templates with comprehensive security rules: credentials (`*.pem`, `*.key`, `service-account*.json`), IDE files, OS files, coverage reports, and language-specific build artifacts. Environment variables now use `.env.*` with `!.env.example` safeguard
+
 ### Added
 - API catch-all 404 route (`/api/[...not-found]`) to `node-nextjs`, `fullstack-nextjs`, and `monorepo-turbo` web app
 - Middleware for API request tracking in `node-nextjs` and `fullstack-nextjs` templates

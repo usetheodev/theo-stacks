@@ -1,8 +1,60 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
 .venv/
+venv/
+env/
+ENV/
+
+# Distribution
 dist/
+build/
 *.egg-info/
+*.egg
+
+# Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+
+# mypy / type checking
+.mypy_cache/
+.ruff_cache/
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+service-account*.json
+
+# Database
+*.sqlite3
+*.db
