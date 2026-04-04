@@ -1,15 +1,33 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "make run-api"
+  build: "make build-all"
+  test: "make test-all"
+  lint: "make lint-all"
+  format: "gofmt -w ."
+  security: "govulncheck ./..."
+
 apps:
   api:
     path: apps/api
     framework: custom
     type: server
     port: 8080
+    commands:
+      dev: "go run ."
+      build: "go build -o ../../bin/api ."
+      test: "go test ./..."
+      lint: "go vet ./..."
 
   worker:
     path: apps/worker
     framework: custom
     type: worker
     port: 8081
+    commands:
+      dev: "go run ."
+      build: "go build -o ../../bin/worker ."
+      test: "go test ./..."
+      lint: "go vet ./..."

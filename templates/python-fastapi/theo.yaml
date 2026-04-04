@@ -1,6 +1,14 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "uvicorn main:app --reload --port 8000"
+  build: "pip install -r requirements.txt"
+  test: "pytest"
+  lint: "ruff check ."
+  format: "ruff format ."
+  security: "pip-audit"
+
 apps:
   api:
     path: .

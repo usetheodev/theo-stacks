@@ -1,6 +1,14 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "bundle exec rackup"
+  build: "bundle install"
+  test: "ruby test/health_test.rb"
+  lint: "bundle exec rubocop"
+  format: "bundle exec rubocop -a"
+  security: "bundle audit"
+
 apps:
   api:
     path: .

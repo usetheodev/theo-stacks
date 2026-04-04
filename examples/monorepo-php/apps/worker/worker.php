@@ -44,7 +44,13 @@ if ($pid === 0) {
     while ($running) {
         $conn = @stream_socket_accept($socket, 1);
         if ($conn) {
-            $body = json_encode(['status' => 'ok']);
+            $request = fread($conn, 1024);
+            if (str_contains($request, 'GET /ready')) {
+                // Customize: add database/redis connectivity checks for production
+                $body = json_encode(['status' => 'ready']);
+            } else {
+                $body = json_encode(['status' => 'ok']);
+            }
             $response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " . strlen($body) . "\r\n\r\n$body";
             fwrite($conn, $response);
             fclose($conn);

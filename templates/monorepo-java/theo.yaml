@@ -1,15 +1,31 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "./gradlew :apps:api:bootRun"
+  build: "./gradlew build"
+  test: "./gradlew test"
+  lint: "./gradlew spotlessCheck"
+  format: "./gradlew spotlessApply"
+  security: "./gradlew dependencyCheckAnalyze"
+
 apps:
   api:
     path: apps/api
     framework: spring-boot
     type: server
     port: 8080
+    commands:
+      dev: "./gradlew :apps:api:bootRun"
+      build: "./gradlew :apps:api:bootJar"
+      test: "./gradlew :apps:api:test"
 
   worker:
     path: apps/worker
     framework: spring-boot
     type: worker
     port: 8081
+    commands:
+      dev: "./gradlew :apps:worker:bootRun"
+      build: "./gradlew :apps:worker:bootJar"
+      test: "./gradlew :apps:worker:test"

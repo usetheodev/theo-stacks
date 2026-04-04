@@ -20,6 +20,14 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Readiness probe — customize: add database/redis checks for production
+app.get("/ready", (req, res) => {
+  if (isShuttingDown) {
+    return res.status(503).json({ status: "shutting-down" });
+  }
+  res.json({ status: "ready" });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: "Not Found" });

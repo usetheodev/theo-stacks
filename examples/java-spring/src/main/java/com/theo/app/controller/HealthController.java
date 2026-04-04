@@ -17,4 +17,10 @@ public class HealthController {
     public Map<String, String> health() {
         return Map.of("status", "ok");
     }
+
+    // Readiness probe — customize: add database/redis checks for production
+    @GetMapping("/ready")
+    public Map<String, String> ready() {
+        return Map.of("status", "ready");
+    }
 }

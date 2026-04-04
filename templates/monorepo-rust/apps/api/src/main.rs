@@ -25,6 +25,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/health", get(health))
+        .route("/ready", get(ready))
         .layer(CorsLayer::permissive())
         .fallback(not_found);
 
@@ -48,6 +49,11 @@ async fn root() -> impl IntoResponse {
 
 async fn health() -> impl IntoResponse {
     Json(json!({ "status": "ok" }))
+}
+
+async fn ready() -> impl IntoResponse {
+    // Customize: add database/redis connectivity checks for production
+    Json(json!({ "status": "ready" }))
 }
 
 async fn not_found() -> impl IntoResponse {

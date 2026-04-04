@@ -1,6 +1,14 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "cargo run"
+  build: "cargo build --release"
+  test: "cargo test"
+  lint: "cargo clippy -- -D warnings"
+  format: "cargo fmt"
+  security: "cargo audit"
+
 apps:
   api:
     path: .

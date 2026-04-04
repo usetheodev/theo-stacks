@@ -1,15 +1,31 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "npm run dev"
+  build: "npm run build"
+  test: "npm test"
+  lint: "npm run lint"
+  format: "npm run format"
+  security: "npm audit"
+
 apps:
   api:
     path: apps/api
     framework: express
     type: server
     port: 3001
+    commands:
+      dev: "npm run dev"
+      test: "npm test"
+      lint: "npm run lint"
+      format: "npm run format"
 
   web:
     path: apps/web
     framework: nextjs
     type: frontend
     render: server
+    commands:
+      dev: "npm run dev"
+      build: "npm run build"

@@ -15,6 +15,11 @@ async function start() {
     return { status: "ok" };
   });
 
+  fastify.get("/ready", async () => {
+    // Customize: add database/redis connectivity checks for production
+    return { status: "ready" };
+  });
+
   fastify.setNotFoundHandler((req, reply) => {
     reply.code(404).send({ error: "Not Found" });
   });

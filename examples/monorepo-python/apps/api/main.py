@@ -55,6 +55,12 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/ready")
+async def ready():
+    # Customize: add database/redis connectivity checks for production
+    return {"status": "ready"}
+
+
 if __name__ == "__main__":
     import uvicorn
 

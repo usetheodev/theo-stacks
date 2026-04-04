@@ -19,6 +19,12 @@ health_server.mount_proc "/health" do |_req, res|
   res.body = { status: "ok" }.to_json
 end
 
+# Readiness probe — customize: add database/redis checks for production
+health_server.mount_proc "/ready" do |_req, res|
+  res.content_type = "application/json"
+  res.body = { status: "ready" }.to_json
+end
+
 # Signal handlers
 ["TERM", "INT"].each do |signal|
   Signal.trap(signal) do

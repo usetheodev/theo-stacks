@@ -47,6 +47,12 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
+	mux.HandleFunc("GET /ready", func(w http.ResponseWriter, r *http.Request) {
+		// Customize: add database/redis connectivity checks for production
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "ready"})
+	})
+
 	srv := &http.Server{Addr: ":" + port, Handler: mux}
 
 	go func() {

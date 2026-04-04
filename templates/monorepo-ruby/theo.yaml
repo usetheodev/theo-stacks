@@ -1,15 +1,29 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "rake api"
+  build: "bundle install"
+  test: "ruby apps/api/test/health_test.rb"
+  lint: "bundle exec rubocop"
+  format: "bundle exec rubocop -a"
+  security: "bundle audit"
+
 apps:
   api:
     path: apps/api
     framework: sinatra
     type: server
     port: 4567
+    commands:
+      dev: "bundle exec rackup config.ru"
+      test: "ruby test/health_test.rb"
+      lint: "bundle exec rubocop"
 
   worker:
     path: apps/worker
     framework: custom
     type: worker
     port: 4568
+    commands:
+      dev: "ruby worker.rb"

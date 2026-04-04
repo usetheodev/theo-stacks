@@ -1,15 +1,31 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "cargo run -p api"
+  build: "cargo build --workspace --release"
+  test: "cargo test --workspace"
+  lint: "cargo clippy --workspace -- -D warnings"
+  format: "cargo fmt --all"
+  security: "cargo audit"
+
 apps:
   api:
     path: apps/api
     framework: axum
     type: server
     port: 8080
+    commands:
+      dev: "cargo run -p api"
+      build: "cargo build -p api --release"
+      test: "cargo test -p api"
 
   worker:
     path: apps/worker
     framework: custom
     type: worker
     port: 8081
+    commands:
+      dev: "cargo run -p worker"
+      build: "cargo build -p worker --release"
+      test: "cargo test -p worker"

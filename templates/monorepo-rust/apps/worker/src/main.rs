@@ -18,7 +18,9 @@ async fn main() {
 
     tracing::info!("worker v{} starting", shared::VERSION);
 
-    let app = Router::new().route("/health", get(health));
+    let app = Router::new()
+        .route("/health", get(health))
+        .route("/ready", get(ready));
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
@@ -54,6 +56,11 @@ async fn main() {
 
 async fn health() -> impl IntoResponse {
     Json(json!({ "status": "ok" }))
+}
+
+async fn ready() -> impl IntoResponse {
+    // Customize: add database/redis connectivity checks for production
+    Json(json!({ "status": "ready" }))
 }
 
 async fn shutdown_signal() {

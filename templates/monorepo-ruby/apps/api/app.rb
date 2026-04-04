@@ -31,6 +31,11 @@ class App < Sinatra::Base
     { status: "ok" }.to_json
   end
 
+  # Readiness probe — customize: add database/redis checks for production
+  get "/ready" do
+    { status: "ready" }.to_json
+  end
+
   not_found do
     { error: "Not Found" }.to_json
   end

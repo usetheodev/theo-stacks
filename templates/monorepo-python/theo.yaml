@@ -1,15 +1,29 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "uv run uvicorn apps.api.main:app --reload --port 8000"
+  build: "uv sync"
+  test: "uv run pytest"
+  lint: "uv run ruff check ."
+  format: "uv run ruff format ."
+  security: "uv run pip-audit"
+
 apps:
   api:
     path: apps/api
     framework: fastapi
     type: server
     port: 8000
+    commands:
+      dev: "uvicorn main:app --reload --port 8000"
+      test: "pytest"
+      lint: "ruff check ."
 
   worker:
     path: apps/worker
     framework: custom
     type: worker
     port: 8001
+    commands:
+      dev: "python worker.py"

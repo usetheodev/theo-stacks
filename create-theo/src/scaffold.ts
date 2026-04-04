@@ -143,7 +143,12 @@ function copyDir(src: string, dest: string, projectName: string): void {
       const destPath = path.join(dest, entry.name);
       copyDir(srcPath, destPath, projectName);
     } else {
-      const destName = entry.name === "gitignore" ? ".gitignore" : entry.name;
+      const destName =
+        entry.name === "gitignore"
+          ? ".gitignore"
+          : entry.name === "dockerignore"
+            ? ".dockerignore"
+            : entry.name;
       const destPath = path.join(dest, destName);
       copyFile(srcPath, destPath, projectName);
     }
@@ -174,7 +179,8 @@ function isTextFile(ext: string, basename: string): boolean {
     basename === "Gemfile" ||
     basename === ".rubocop.yml" ||
     basename === "Rakefile" ||
-    basename === "Procfile"
+    basename === "Procfile" ||
+    basename === "dockerignore"
   );
 }
 

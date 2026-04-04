@@ -32,6 +32,12 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"status": "ok"}).encode())
+        elif self.path == "/ready":
+            # Customize: add database/redis connectivity checks for production
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "ready"}).encode())
         else:
             self.send_response(404)
             self.end_headers()

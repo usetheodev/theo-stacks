@@ -20,6 +20,13 @@ $app->get('/health', function (Request $request, Response $response) {
     return $response->withHeader('Content-Type', 'application/json');
 });
 
+$app->get('/ready', function (Request $request, Response $response) {
+    // Customize: add database/redis connectivity checks for production
+    $payload = json_encode(['status' => 'ready']);
+    $response->getBody()->write($payload);
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 $app->options('/{routes:.+}', function (Request $request, Response $response) {
     return $response;
 });

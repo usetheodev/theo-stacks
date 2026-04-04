@@ -34,4 +34,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

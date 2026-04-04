@@ -1,15 +1,28 @@
 version: 1
 project: "{{project-name}}"
 
+commands:
+  dev: "make api"
+  build: "composer install --no-dev --optimize-autoloader"
+  test: "./vendor/bin/phpunit tests/"
+  lint: "composer lint"
+  format: "composer cs"
+  security: "composer audit"
+
 apps:
   api:
     path: apps/api
     framework: slim
     type: server
     port: 8000
+    commands:
+      dev: "php -S 0.0.0.0:8000 -t public"
+      test: "../../vendor/bin/phpunit ../../tests/"
 
   worker:
     path: apps/worker
     framework: custom
     type: worker
     port: 8001
+    commands:
+      dev: "php worker.php"

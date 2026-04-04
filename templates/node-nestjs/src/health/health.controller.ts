@@ -1,9 +1,15 @@
 import { Controller, Get } from "@nestjs/common";
 
-@Controller("health")
+@Controller()
 export class HealthController {
-  @Get()
+  @Get("health")
   check() {
     return { status: "ok" };
+  }
+
+  // Readiness probe — customize: add database/redis checks for production
+  @Get("ready")
+  ready() {
+    return { status: "ready" };
   }
 }
