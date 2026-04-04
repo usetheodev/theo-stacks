@@ -17,6 +17,18 @@ coverage/
 .env.*
 !.env.example
 
+# Examples — generated artifacts (locks, deps, build output)
+examples/**/node_modules/
+examples/**/package-lock.json
+examples/**/Cargo.lock
+examples/**/target/
+examples/**/.next/
+examples/**/build/
+examples/**/dist/
+examples/**/__pycache__/
+examples/**/.gradle/
+examples/**/*.class
+
 # OS
 .DS_Store
 Thumbs.db

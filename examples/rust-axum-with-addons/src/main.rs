@@ -8,7 +8,7 @@ use serde_json::json;
 use std::net::SocketAddr;
 use tokio::signal;
 use tower_http::cors::CorsLayer;
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::fmt;
 
 #[tokio::main]
 async fn main() {
