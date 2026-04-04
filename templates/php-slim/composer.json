@@ -3,7 +3,7 @@
   "description": "Slim API server scaffolded by Theo",
   "type": "project",
   "require": {
-    "php": ">=8.2",
+    "php": ">=8.1",
     "slim/slim": "^4.0",
     "slim/psr7": "^1.0",
     "monolog/monolog": "^3.0",

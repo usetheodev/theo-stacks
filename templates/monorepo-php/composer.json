@@ -2,8 +2,10 @@
   "name": "theo/{{project-name}}",
   "description": "PHP monorepo scaffolded by Theo",
   "type": "project",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "require": {
-    "php": ">=8.2",
+    "php": ">=8.1",
     "slim/slim": "^4.0",
     "slim/psr7": "^1.0",
     "monolog/monolog": "^3.0",
