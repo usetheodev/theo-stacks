@@ -1,8 +1,10 @@
 <p align="center">
   <a href="https://usetheo.dev">
-    <h1 align="center">create-theo</h1>
+    <img src="https://usetheo.dev/logo.png" alt="Theo" height="80" />
   </a>
 </p>
+
+<h1 align="center">create-theo</h1>
 
 <p align="center">
   Production-ready project scaffolding for Node.js, Go, Python, Rust, Java, Ruby, and PHP. Deploy anywhere.
