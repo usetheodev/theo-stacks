@@ -10,7 +10,7 @@ export function register() {
     logger.info("Application starting");
 
     // Graceful shutdown
-    const shutdown = (signal) => {
+    const shutdown = (signal: string) => {
       logger.info({ signal }, "Shutdown signal received");
       process.exit(0);
     };

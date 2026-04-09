@@ -107,15 +107,16 @@ describe("parametric styling scaffold with node-nextjs", () => {
   beforeEach(() => { tempDir = createTempDir(); });
   afterEach(() => { cleanup(tempDir); });
 
-  const expectedConfigFiles: Record<string, { tailwind: boolean; postcss: boolean }> = {
-    none:      { tailwind: false, postcss: false },
-    tailwind:  { tailwind: true,  postcss: true  },
-    shadcn:    { tailwind: true,  postcss: true  },
-    daisyui:   { tailwind: true,  postcss: true  },
-    chakra:    { tailwind: false, postcss: false },
-    mantine:   { tailwind: false, postcss: true  },
-    bootstrap: { tailwind: false, postcss: false },
-    bulma:     { tailwind: false, postcss: false },
+  // Tailwind v4: no tailwind.config.js — only postcss.config.mjs
+  const expectedConfigFiles: Record<string, { postcss: boolean }> = {
+    none:      { postcss: false },
+    tailwind:  { postcss: true  },
+    shadcn:    { postcss: true  },
+    daisyui:   { postcss: true  },
+    chakra:    { postcss: false },
+    mantine:   { postcss: true  },
+    bootstrap: { postcss: false },
+    bulma:     { postcss: false },
   };
 
   it.each(listStylingIds())("styling=%s creates correct dependencies in package.json", (stylingId) => {
@@ -158,7 +159,6 @@ describe("parametric styling scaffold with node-nextjs", () => {
     });
 
     const expected = expectedConfigFiles[stylingId];
-    expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(expected.tailwind);
-    expect(fs.existsSync(path.join(targetDir, "postcss.config.js"))).toBe(expected.postcss);
+    expect(fs.existsSync(path.join(targetDir, "postcss.config.mjs"))).toBe(expected.postcss);
   });
 });

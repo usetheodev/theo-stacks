@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { scaffold } from "../src/scaffold.js";
+import { scaffold, dryRunScaffold } from "../src/scaffold.js";
 import { getTemplate, listTemplateIds } from "../src/templates.js";
 import { getStylingOption } from "../src/styling.js";
 
@@ -146,13 +146,14 @@ describe("scaffold", () => {
     expect(settings).not.toContain("{{project-name}}");
   });
 
-  it("throws if target directory is not empty", () => {
+  it("overwrites existing directory contents during scaffold", () => {
     const targetDir = path.join(tempDir, "existing");
     fs.mkdirSync(targetDir);
     fs.writeFileSync(path.join(targetDir, "file.txt"), "content");
 
     const template = getTemplate("node-express")!;
 
+    // scaffold should succeed — overwrite validation is handled by the CLI layer
     expect(() =>
       scaffold({
         projectName: "existing",
@@ -161,7 +162,9 @@ describe("scaffold", () => {
         skipInstall: true,
         skipGit: true,
       }),
-    ).toThrow("already exists and is not empty");
+    ).not.toThrow();
+
+    expect(fs.existsSync(path.join(targetDir, "theo.yaml"))).toBe(true);
   });
 
   it("throws for unknown template id", () => {
@@ -198,17 +201,17 @@ describe("scaffold", () => {
     });
 
     expect(
-      fs.existsSync(path.join(targetDir, "src", "app", "page.js")),
+      fs.existsSync(path.join(targetDir, "src", "app", "page.tsx")),
     ).toBe(true);
     expect(
-      fs.existsSync(path.join(targetDir, "src", "app", "layout.js")),
+      fs.existsSync(path.join(targetDir, "src", "app", "layout.tsx")),
     ).toBe(true);
     expect(
       fs.existsSync(
-        path.join(targetDir, "src", "app", "api", "health", "route.js"),
+        path.join(targetDir, "src", "app", "api", "health", "route.ts"),
       ),
     ).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "next.config.js"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "next.config.mjs"))).toBe(true);
   });
 
   it("scaffolds all 19 templates without error", () => {
@@ -463,19 +466,18 @@ describe("scaffold with styling", () => {
       skipGit: true,
     });
 
-    expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "postcss.config.js"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "postcss.config.mjs"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(false);
 
     const globals = fs.readFileSync(path.join(targetDir, "src", "app", "globals.css"), "utf-8");
-    expect(globals).toContain("@tailwind base");
+    expect(globals).toContain('@import "tailwindcss"');
 
-    const layout = fs.readFileSync(path.join(targetDir, "src", "app", "layout.js"), "utf-8");
+    const layout = fs.readFileSync(path.join(targetDir, "src", "app", "layout.tsx"), "utf-8");
     expect(layout).toContain("globals.css");
 
     const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"));
     expect(pkg.devDependencies.tailwindcss).toBeDefined();
-    expect(pkg.devDependencies.postcss).toBeDefined();
-    expect(pkg.devDependencies.autoprefixer).toBeDefined();
+    expect(pkg.devDependencies["@tailwindcss/postcss"]).toBeDefined();
   });
 
   it("applies shadcn to fullstack-nextjs template", () => {
@@ -492,16 +494,18 @@ describe("scaffold with styling", () => {
       skipGit: true,
     });
 
-    const tailwindCfg = fs.readFileSync(path.join(targetDir, "tailwind.config.js"), "utf-8");
-    expect(tailwindCfg).toContain("tailwindcss-animate");
+    expect(fs.existsSync(path.join(targetDir, "postcss.config.mjs"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(false);
 
     const globals = fs.readFileSync(path.join(targetDir, "src", "app", "globals.css"), "utf-8");
+    expect(globals).toContain('@import "tailwindcss"');
+    expect(globals).toContain('@import "tw-animate-css"');
     expect(globals).toContain("--background");
     expect(globals).toContain("--foreground");
+    expect(globals).toContain("oklch(");
 
     const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"));
     expect(pkg.dependencies["tailwind-merge"]).toBeDefined();
-    expect(pkg.dependencies["class-variance-authority"]).toBeDefined();
     expect(pkg.dependencies["@radix-ui/react-slot"]).toBeDefined();
   });
 
@@ -519,8 +523,8 @@ describe("scaffold with styling", () => {
       skipGit: true,
     });
 
-    const tailwindCfg = fs.readFileSync(path.join(targetDir, "tailwind.config.js"), "utf-8");
-    expect(tailwindCfg).toContain("daisyui");
+    expect(fs.existsSync(path.join(targetDir, "postcss.config.mjs"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(false);
 
     const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"));
     expect(pkg.devDependencies.daisyui).toBeDefined();
@@ -540,7 +544,7 @@ describe("scaffold with styling", () => {
       skipGit: true,
     });
 
-    const layout = fs.readFileSync(path.join(targetDir, "src", "app", "layout.js"), "utf-8");
+    const layout = fs.readFileSync(path.join(targetDir, "src", "app", "layout.tsx"), "utf-8");
     expect(layout).toContain("ChakraProviders");
 
     const providers = fs.readFileSync(path.join(targetDir, "src", "app", "providers.js"), "utf-8");
@@ -565,11 +569,11 @@ describe("scaffold with styling", () => {
       skipGit: true,
     });
 
-    const layout = fs.readFileSync(path.join(targetDir, "src", "app", "layout.js"), "utf-8");
+    const layout = fs.readFileSync(path.join(targetDir, "src", "app", "layout.tsx"), "utf-8");
     expect(layout).toContain("MantineProvider");
     expect(layout).toContain("ColorSchemeScript");
 
-    const postcss = fs.readFileSync(path.join(targetDir, "postcss.config.js"), "utf-8");
+    const postcss = fs.readFileSync(path.join(targetDir, "postcss.config.mjs"), "utf-8");
     expect(postcss).toContain("postcss-preset-mantine");
 
     const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"));
@@ -634,8 +638,8 @@ describe("scaffold with styling", () => {
     });
 
     const webDir = path.join(targetDir, "apps", "web");
-    expect(fs.existsSync(path.join(webDir, "tailwind.config.js"))).toBe(true);
-    expect(fs.existsSync(path.join(webDir, "postcss.config.js"))).toBe(true);
+    expect(fs.existsSync(path.join(webDir, "postcss.config.mjs"))).toBe(true);
+    expect(fs.existsSync(path.join(webDir, "tailwind.config.js"))).toBe(false);
 
     const webPkg = JSON.parse(fs.readFileSync(path.join(webDir, "package.json"), "utf-8"));
     expect(webPkg.devDependencies.tailwindcss).toBeDefined();
@@ -659,7 +663,7 @@ describe("scaffold with styling", () => {
     });
 
     expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(false);
-    expect(fs.existsSync(path.join(targetDir, "postcss.config.js"))).toBe(false);
+    expect(fs.existsSync(path.join(targetDir, "postcss.config.mjs"))).toBe(false);
     expect(fs.existsSync(path.join(targetDir, "src", "app", "globals.css"))).toBe(false);
   });
 
@@ -797,8 +801,8 @@ describe("scaffold with combined features", () => {
     });
 
     // Verify styling was applied
-    expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "postcss.config.js"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "postcss.config.mjs"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "tailwind.config.js"))).toBe(false);
     const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"));
     expect(pkg.devDependencies.tailwindcss).toBeDefined();
 
@@ -868,7 +872,8 @@ describe("scaffold with combined features", () => {
 
     // Verify styling applied to web app only
     const webDir = path.join(targetDir, "apps", "web");
-    expect(fs.existsSync(path.join(webDir, "tailwind.config.js"))).toBe(true);
+    expect(fs.existsSync(path.join(webDir, "postcss.config.mjs"))).toBe(true);
+    expect(fs.existsSync(path.join(webDir, "tailwind.config.js"))).toBe(false);
     const webPkg = JSON.parse(fs.readFileSync(path.join(webDir, "package.json"), "utf-8"));
     expect(webPkg.devDependencies.tailwindcss).toBeDefined();
 
@@ -880,5 +885,40 @@ describe("scaffold with combined features", () => {
     expect(fs.existsSync(path.join(targetDir, "docker-compose.yml"))).toBe(true);
     const compose = fs.readFileSync(path.join(targetDir, "docker-compose.yml"), "utf-8");
     expect(compose).toContain("postgres");
+  });
+});
+
+describe("dryRunScaffold", () => {
+  it("returns file list without creating any files", () => {
+    const template = getTemplate("node-express")!;
+    const targetDir = "/tmp/should-not-exist-dry-run-test";
+
+    const files = dryRunScaffold({
+      projectName: "dry-test",
+      template,
+      targetDir,
+    });
+
+    expect(files.length).toBeGreaterThan(0);
+    expect(files).toContain("theo.yaml");
+    expect(files).toContain("package.json");
+    expect(files).toContain("src/index.js");
+    expect(fs.existsSync(targetDir)).toBe(false);
+  });
+
+  it("includes addon indicators when addons specified", () => {
+    const template = getTemplate("node-express")!;
+
+    const files = dryRunScaffold({
+      projectName: "dry-addons",
+      template,
+      targetDir: "/tmp/should-not-exist-dry-addons",
+      database: true,
+      addons: ["redis", "auth-jwt"],
+    });
+
+    expect(files).toContain("docker-compose.yml");
+    expect(files).toContain("src/lib/redis.js");
+    expect(files).toContain("src/middleware/auth.js");
   });
 });

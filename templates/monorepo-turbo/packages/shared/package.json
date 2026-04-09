@@ -2,5 +2,9 @@
   "name": "@{{project-name}}/shared",
   "version": "1.0.0",
   "private": true,
-  "main": "src/index.js"
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  }
 }

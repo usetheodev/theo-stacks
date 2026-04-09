@@ -2,9 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
+import degit from "degit";
 import type { TemplateInfo } from "./templates.js";
 import type { StylingOption } from "./styling.js";
 import type { AddonId } from "./addons.js";
+import { getInstallCommand, type PackageManager } from "./packageManager.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +58,14 @@ export interface ScaffoldOptions {
   addons?: AddonId[];
   skipInstall?: boolean;
   skipGit?: boolean;
+  dryRun?: boolean;
+  verbose?: boolean;
+}
+
+function verboseLog(verbose: boolean | undefined, msg: string): void {
+  if (verbose) {
+    console.error(`  [verbose] ${msg}`);
+  }
 }
 
 export function scaffold(options: ScaffoldOptions): void {
@@ -68,16 +78,8 @@ export function scaffold(options: ScaffoldOptions): void {
     addons = [],
     skipInstall,
     skipGit,
+    verbose,
   } = options;
-
-  if (fs.existsSync(targetDir)) {
-    const contents = fs.readdirSync(targetDir);
-    if (contents.length > 0) {
-      throw new Error(
-        `Directory "${targetDir}" already exists and is not empty.`,
-      );
-    }
-  }
 
   const templatesRoot = path.resolve(
     __dirname,
@@ -90,26 +92,33 @@ export function scaffold(options: ScaffoldOptions): void {
     throw new Error(`Template "${template.id}" not found at ${templatesRoot}`);
   }
 
+  verboseLog(verbose, `Copying template ${template.id} from ${templatesRoot}`);
   copyDir(templatesRoot, targetDir, projectName);
 
   if (styling) {
+    verboseLog(verbose, `Applying styling: ${styling.name}`);
     applyStyling(targetDir, template, styling);
   }
 
   if (database) {
+    verboseLog(verbose, `Applying database layer: ${template.language}`);
     applyDatabase(targetDir, template);
   }
 
   if (addons.includes("redis")) {
+    verboseLog(verbose, "Applying addon: redis");
     applyRedis(targetDir, template);
   }
   if (addons.includes("auth-jwt")) {
+    verboseLog(verbose, "Applying addon: auth-jwt");
     applyAuth(targetDir, template);
   }
   if (addons.includes("auth-oauth")) {
+    verboseLog(verbose, "Applying addon: auth-oauth");
     applyAuthOAuth(targetDir, template);
   }
   if (addons.includes("queue")) {
+    verboseLog(verbose, "Applying addon: queue");
     applyQueue(targetDir, template);
   }
 
@@ -118,12 +127,15 @@ export function scaffold(options: ScaffoldOptions): void {
   const hasAuthJwt = addons.includes("auth-jwt");
   const hasAuthOAuth = addons.includes("auth-oauth");
   if (database || needsRedis || hasAuthJwt || hasAuthOAuth) {
+    verboseLog(verbose, "Writing infrastructure files (docker-compose, .env)");
     writeInfraFiles(targetDir, !!database, needsRedis, hasAuthJwt, hasAuthOAuth);
   }
 
+  verboseLog(verbose, "Writing CI workflow");
   writeCI(targetDir, template);
 
   if (!skipGit) {
+    verboseLog(verbose, "Initializing git repository");
     initGit(targetDir);
   }
 
@@ -184,6 +196,87 @@ function isTextFile(ext: string, basename: string): boolean {
   );
 }
 
+export async function scaffoldExternal(
+  repo: string,
+  targetDir: string,
+  projectName: string,
+  verbose?: boolean,
+): Promise<void> {
+  verboseLog(verbose, `Cloning external template from ${repo}`);
+  const emitter = degit(repo, { verbose: !!verbose });
+  if (verbose) {
+    emitter.on("info", (info: { message: string }) => {
+      console.error(`  [degit] ${info.message}`);
+    });
+  }
+  await emitter.clone(targetDir);
+
+  // Rename dotfiles (gitignore → .gitignore, dockerignore → .dockerignore)
+  for (const name of ["gitignore", "dockerignore"]) {
+    const src = path.join(targetDir, name);
+    const dest = path.join(targetDir, `.${name}`);
+    if (fs.existsSync(src) && !fs.existsSync(dest)) {
+      fs.renameSync(src, dest);
+    }
+  }
+
+  // Replace placeholder in package.json if it exists
+  const pkgPath = path.join(targetDir, "package.json");
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+    pkg.name = projectName;
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  }
+
+  // Replace placeholder in theo.yaml if it exists
+  const theoPath = path.join(targetDir, "theo.yaml");
+  if (fs.existsSync(theoPath)) {
+    const content = fs.readFileSync(theoPath, "utf-8");
+    fs.writeFileSync(theoPath, content.replaceAll(PLACEHOLDER, projectName));
+  }
+
+  verboseLog(verbose, "External template scaffolded successfully");
+}
+
+export function dryRunScaffold(options: ScaffoldOptions): string[] {
+  const { template, styling, database, addons = [] } = options;
+
+  const templatesRoot = path.resolve(__dirname, "..", "templates", template.id);
+  if (!fs.existsSync(templatesRoot)) {
+    throw new Error(`Template "${template.id}" not found at ${templatesRoot}`);
+  }
+
+  const files = collectFiles(templatesRoot, "");
+
+  if (styling) files.push("(styling files)");
+  if (database) files.push("prisma/schema.prisma", "src/lib/db.js", ".env", ".env.example", "docker-compose.yml");
+  if (addons.includes("redis")) files.push("src/lib/redis.js");
+  if (addons.includes("auth-jwt")) files.push("src/middleware/auth.js");
+  if (addons.includes("auth-oauth")) files.push("src/middleware/oauth.js");
+  if (addons.includes("queue")) files.push("src/lib/queue.js");
+  files.push(".github/workflows/ci.yml");
+
+  return files.sort();
+}
+
+function collectFiles(dir: string, prefix: string): string[] {
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules") continue;
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...collectFiles(path.join(dir, entry.name), rel));
+    } else {
+      const name =
+        entry.name === "gitignore" ? ".gitignore" :
+        entry.name === "dockerignore" ? ".dockerignore" :
+        entry.name;
+      files.push(prefix ? `${prefix}/${name}` : name);
+    }
+  }
+  return files;
+}
+
 function initGit(dir: string): void {
   try {
     execSync("git init", { cwd: dir, stdio: "ignore" });
@@ -192,21 +285,25 @@ function initGit(dir: string): void {
   }
 }
 
-export function installNodeDeps(dir: string): void {
-  const packageManager = detectPackageManager(dir);
+export function installNodeDeps(dir: string, pm: PackageManager = "npm"): void {
+  const args = getInstallCommand(pm);
+  const cmd = `${pm} ${args.join(" ")}`;
   try {
-    execSync(`${packageManager} install`, { cwd: dir, stdio: "pipe" });
+    execSync(cmd, {
+      cwd: dir,
+      stdio: "pipe",
+      env: {
+        ...process.env,
+        ADBLOCK: "1",
+        DISABLE_OPENCOLLECTIVE: "1",
+        NODE_ENV: "development",
+      },
+    });
   } catch {
     throw new Error(
-      `Failed to install dependencies. Run "${packageManager} install" manually.`,
+      `Failed to install dependencies. Run "${pm} install" manually.`,
     );
   }
-}
-
-function detectPackageManager(dir: string): string {
-  if (fs.existsSync(path.join(dir, "pnpm-lock.yaml"))) return "pnpm";
-  if (fs.existsSync(path.join(dir, "yarn.lock"))) return "yarn";
-  return "npm";
 }
 
 // --- Styling Layer ---
@@ -290,12 +387,9 @@ function addDependencies(pkgDir: string, styling: StylingOption): void {
 
 function writeStylingConfig(appDir: string, styling: StylingOption): void {
   const needsTailwind = ["tailwind", "shadcn", "daisyui"].includes(styling.id);
-  const needsPostcss =
-    needsTailwind || ["mantine"].includes(styling.id);
+  const needsPostcss = needsTailwind || ["mantine"].includes(styling.id);
 
-  if (needsTailwind) {
-    writeTailwindConfig(appDir, styling);
-  }
+  // Tailwind v4: no tailwind.config.js needed — config is in CSS via @theme
 
   if (needsPostcss) {
     writePostcssConfig(appDir, styling);
@@ -306,67 +400,12 @@ function writeStylingConfig(appDir: string, styling: StylingOption): void {
   }
 }
 
-function writeTailwindConfig(appDir: string, styling: StylingOption): void {
-  let plugins = "";
-  let extendBlock = "";
-
-  if (styling.id === "daisyui") {
-    plugins = `\n  plugins: [require("daisyui")],`;
-  }
-
-  if (styling.id === "shadcn") {
-    plugins = `\n  plugins: [require("tailwindcss-animate")],`;
-    extendBlock = `
-    extend: {
-      colors: {
-        border: "hsl(var(--border))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-    },`;
-  }
-
-  const themeBlock = extendBlock
-    ? `\n  theme: {${extendBlock}\n  },`
-    : "";
-
-  const config = `/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-  ],${themeBlock}${plugins}
-};
-`;
-
-  fs.writeFileSync(path.join(appDir, "tailwind.config.js"), config);
-}
-
 function writePostcssConfig(appDir: string, styling: StylingOption): void {
   let config: string;
 
   if (styling.id === "mantine") {
-    config = `module.exports = {
+    config = `/** @type {import('postcss-load-config').Config} */
+const config = {
   plugins: {
     "postcss-preset-mantine": {},
     "postcss-simple-vars": {
@@ -380,18 +419,23 @@ function writePostcssConfig(appDir: string, styling: StylingOption): void {
     },
   },
 };
+
+export default config;
 `;
   } else {
-    config = `module.exports = {
+    // Tailwind v4 uses @tailwindcss/postcss
+    config = `/** @type {import('postcss-load-config').Config} */
+const config = {
   plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+    "@tailwindcss/postcss": {},
   },
 };
+
+export default config;
 `;
   }
 
-  fs.writeFileSync(path.join(appDir, "postcss.config.js"), config);
+  fs.writeFileSync(path.join(appDir, "postcss.config.mjs"), config);
 }
 
 function writeGlobalsCss(appDir: string, styling: StylingOption): void {
@@ -403,66 +447,112 @@ function writeGlobalsCss(appDir: string, styling: StylingOption): void {
 
   switch (styling.id) {
     case "tailwind":
-      css = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
+      css = `@import "tailwindcss";
 `;
       break;
 
     case "shadcn":
-      css = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
+      css = `@import "tailwindcss";
+@import "tw-animate-css";
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --radius: 0.5rem;
-  }
+@custom-variant dark (&:is(.dark *));
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --radius: 0.5rem;
-  }
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
+  --radius: 0.625rem;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+}
+
+.dark {
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.141 0.005 285.823);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.141 0.005 285.823);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.274 0.006 286.033);
+  --input: oklch(0.274 0.006 286.033);
+  --ring: oklch(0.552 0.016 285.938);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border outline-ring/50;
   }
-
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    @apply bg-background text-foreground;
   }
 }
 `;
       break;
 
     case "daisyui":
-      css = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
+      css = `@import "tailwindcss";
 `;
       break;
 
@@ -494,7 +584,11 @@ function writeGlobalsCss(appDir: string, styling: StylingOption): void {
 }
 
 function updateLayout(appDir: string, styling: StylingOption): void {
-  const layoutPath = path.join(appDir, "src", "app", "layout.js");
+  // Support both .tsx (new) and .js (legacy) layouts
+  let layoutPath = path.join(appDir, "src", "app", "layout.tsx");
+  if (!fs.existsSync(layoutPath)) {
+    layoutPath = path.join(appDir, "src", "app", "layout.js");
+  }
 
   if (!fs.existsSync(layoutPath)) return;
 
@@ -521,17 +615,19 @@ function addGlobalsCssImport(content: string): string {
 
 function buildChakraLayout(content: string): string {
   const metadataMatch = content.match(
-    /export const metadata\s*=\s*\{[^}]+\};?/s,
+    /export const metadata[\s\S]*?};/,
   );
   const metadataBlock = metadataMatch
     ? metadataMatch[0]
-    : 'export const metadata = { title: "App", description: "Deployed with Theo" };';
+    : 'export const metadata: Metadata = { title: "App", description: "Deployed with Theo" };';
 
-  return `import { ChakraProviders } from "./providers";
+  return `import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { ChakraProviders } from "./providers";
 
 ${metadataBlock}
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
@@ -559,18 +655,20 @@ export function ChakraProviders({ children }) {
 
 function buildMantineLayout(content: string): string {
   const metadataMatch = content.match(
-    /export const metadata\s*=\s*\{[^}]+\};?/s,
+    /export const metadata[\s\S]*?};/,
   );
   const metadataBlock = metadataMatch
     ? metadataMatch[0]
-    : 'export const metadata = { title: "App", description: "Deployed with Theo" };';
+    : 'export const metadata: Metadata = { title: "App", description: "Deployed with Theo" };';
 
-  return `import "@mantine/core/styles.css";
+  return `import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import "@mantine/core/styles.css";
 import { MantineProvider, ColorSchemeScript } from "@mantine/core";
 
 ${metadataBlock}
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
@@ -592,7 +690,11 @@ function updatePage(
   template: TemplateInfo,
   styling: StylingOption,
 ): void {
-  const pagePath = path.join(appDir, "src", "app", "page.js");
+  // Support both .tsx (new) and .js (legacy)
+  let pagePath = path.join(appDir, "src", "app", "page.tsx");
+  if (!fs.existsSync(pagePath)) {
+    pagePath = path.join(appDir, "src", "app", "page.js");
+  }
   if (!fs.existsSync(pagePath)) return;
 
   const isFullstack = template.id === "fullstack-nextjs";
@@ -711,7 +813,7 @@ function buildTailwindPage(
           Deployed with Theo
         </h1>
         <p className="text-gray-600 mb-6">
-          Edit <code className="bg-gray-200 px-1.5 py-0.5 rounded text-sm font-mono">src/app/page.js</code> to get started.
+          Edit <code className="bg-gray-200 px-1.5 py-0.5 rounded text-sm font-mono">src/app/page.tsx</code> to get started.
         </p>
         <span className="${badgeClass}">
           ${variant === "daisyui" ? "daisyUI" : variant === "shadcn" ? "shadcn/ui" : "Tailwind CSS"}
@@ -745,7 +847,7 @@ export default function Home() {${itemsBlock}
           Deployed with Theo
         </Heading>
         <Text color="gray.600">
-          Edit <Code>src/app/page.js</Code> to get started.
+          Edit <Code>src/app/page.tsx</Code> to get started.
         </Text>
         <Badge colorScheme="blue">Chakra UI</Badge>${itemsList}
       </VStack>
@@ -775,7 +877,7 @@ export default function Home() {${itemsBlock}
       <Stack align="center" gap="md">
         <Title order={1}>Deployed with Theo</Title>
         <Text c="dimmed">
-          Edit <Code>src/app/page.js</Code> to get started.
+          Edit <Code>src/app/page.tsx</Code> to get started.
         </Text>
         <Badge variant="light" color="blue">Mantine</Badge>${itemsList}
       </Stack>
@@ -800,7 +902,7 @@ function buildBootstrapPage(
           Deployed with Theo
         </h1>
         <p className="text-muted mb-4">
-          Edit <code>src/app/page.js</code> to get started.
+          Edit <code>src/app/page.tsx</code> to get started.
         </p>
         <span className="badge bg-primary">Bootstrap</span>${itemsList}
       </div>
@@ -826,7 +928,7 @@ function buildBulmaPage(
             Deployed with Theo
           </h1>
           <p className="subtitle">
-            Edit <code>src/app/page.js</code> to get started.
+            Edit <code>src/app/page.tsx</code> to get started.
           </p>
           <span className="tag is-primary is-medium">Bulma</span>${itemsList}
         </div>

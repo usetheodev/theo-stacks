@@ -2,7 +2,38 @@
 
 ## [Unreleased]
 
+### Added
+- TypeScript-first frontend templates: `node-nextjs`, `fullstack-nextjs`, and `monorepo-turbo` web app now use `.tsx`/`.ts` throughout with full type safety
+- `tsconfig.json` with path aliases (`@/*`) in all frontend templates
+- ThemeProvider with dark mode support (next-themes) and `suppressHydrationWarning` in all frontend templates
+- `lib/utils.ts` with `cn()` utility function (clsx + tailwind-merge) in all frontend templates
+- `components.json` for shadcn/ui CLI integration (`npx shadcn add button` works out of the box)
+- Placeholder directories (`components/`, `hooks/`) with `.gitkeep` in all frontend templates
+- `prettier-plugin-tailwindcss` for automatic Tailwind class sorting with `cn()`/`cva()` awareness
+- `typecheck` script (`tsc --noEmit`) in all frontend templates
+- OKLCH color system with 44 CSS custom properties (light + dark mode) for shadcn styling option
+- `@theme inline` Tailwind v4 directive mapping CSS variables to utility classes for shadcn styling
+- Turbo TUI dashboard and `lint`/`format`/`typecheck` tasks in `monorepo-turbo` turbo.json
+- Flag `--dry-run` to preview scaffolded files without creating anything
+- Flag `-v, --verbose` for detailed logging during scaffolding
+- Package manager auto-detection via `npm_config_user_agent` (supports npm, pnpm, yarn, bun)
+- External GitHub templates via `--template user/repo` or `--template user/repo#branch` using degit
+- Overwrite confirmation prompt when target directory already exists and is not empty
+- Alpha publish guard script (`prepack` hook) to prevent publishing prerelease versions as `latest`
+
 ### Changed
+- Migrated build system from `tsc` to `unbuild` — CLI is now a single bundled file (369 KB) with all dependencies inlined
+- CLI entry point changed from `dist/index.js` to `index.js` (shebang → `dist/index.mjs`)
+- Moved `@inquirer/prompts`, `chalk`, `ora` from runtime dependencies to devDependencies (inlined at build time)
+- Post-scaffold dependency install is now non-fatal — project files are created even if `npm install` fails
+- Install commands now use clean flags (`--no-fund`, `--no-audit`, `--loglevel=error`) and suppress ads
+- Output instructions adapt to detected package manager (e.g., `pnpm run dev` instead of `npm run dev`)
+- Upgraded frontend templates: React 18→19, Next.js 14→15, Tailwind CSS v3→v4
+- Frontend templates now use `next.config.mjs` (ESM) with `next dev --turbopack`
+- Tailwind v4 styling: `@import "tailwindcss"` replaces `@tailwind` directives; no more `tailwind.config.js`
+- PostCSS config uses `@tailwindcss/postcss` in `.mjs` format (replaces tailwindcss + autoprefixer)
+- shadcn styling option now uses OKLCH color space (replaces HSL), `tw-animate-css` (replaces `tailwindcss-animate`)
+- Monorepo shared package migrated to TypeScript with `exports` field
 - Hardened `.gitignore` for all 19 templates with comprehensive security rules: credentials (`*.pem`, `*.key`, `service-account*.json`), IDE files, OS files, coverage reports, and language-specific build artifacts. Environment variables now use `.env.*` with `!.env.example` safeguard
 
 ### Added

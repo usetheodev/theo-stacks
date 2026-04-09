@@ -42,7 +42,7 @@ for template_dir in "$TEMPLATES_DIR"/*/; do
   cd "$WORK_DIR"
 
   # 1. Scaffold
-  if ! node "$CREATE_THEO_DIR/dist/index.js" "$project_name" --template "$template_id" 2>/dev/null; then
+  if ! node "$CREATE_THEO_DIR/index.js" "$project_name" --template "$template_id" 2>/dev/null; then
     log_fail "$template_id" "scaffold failed"
     continue
   fi

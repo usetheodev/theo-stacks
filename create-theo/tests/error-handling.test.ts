@@ -23,13 +23,14 @@ describe("error handling", () => {
     cleanup(tempDir);
   });
 
-  it("throws with clear message when target directory is not empty", () => {
+  it("scaffold succeeds when target directory has existing files (overwrite handled by CLI)", () => {
     const targetDir = path.join(tempDir, "existing");
     fs.mkdirSync(targetDir);
     fs.writeFileSync(path.join(targetDir, "file.txt"), "content");
 
     const template = getTemplate("node-express")!;
 
+    // Overwrite validation is now handled by the CLI layer (index.ts), not scaffold
     expect(() =>
       scaffold({
         projectName: "existing",
@@ -38,7 +39,9 @@ describe("error handling", () => {
         skipInstall: true,
         skipGit: true,
       }),
-    ).toThrow("already exists and is not empty");
+    ).not.toThrow();
+
+    expect(fs.existsSync(path.join(targetDir, "theo.yaml"))).toBe(true);
   });
 
   it("throws with clear message for nonexistent template", () => {

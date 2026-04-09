@@ -9,7 +9,7 @@ export function register() {
     globalThis.__logger = logger;
     logger.info("Application starting");
 
-    const shutdown = (signal) => {
+    const shutdown = (signal: string) => {
       logger.info({ signal }, "Shutdown signal received");
       process.exit(0);
     };

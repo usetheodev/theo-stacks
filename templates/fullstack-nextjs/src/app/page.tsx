@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+interface Item {
+  id: number;
+  name: string;
+}
+
 export default function Home() {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
     fetch("/api/items")

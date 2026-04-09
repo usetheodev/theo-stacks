@@ -7,7 +7,8 @@
 <h1 align="center">create-theo</h1>
 
 <p align="center">
-  Production-ready project scaffolding for Node.js, Go, Python, Rust, Java, Ruby, and PHP. Deploy anywhere.
+  Production-ready project scaffolding for Node.js, Go, Python, Rust, Java, Ruby, and PHP.<br/>
+  TypeScript-first. Tailwind v4. Dark mode. Deploy anywhere.
 </p>
 
 <p align="center">
@@ -34,12 +35,14 @@ Pick a stack, answer a few prompts, start building. Deploy to any platform — [
 
 ### Other package managers
 
-```bash
-# yarn
-yarn create theo
+The CLI auto-detects your package manager and adapts all commands accordingly.
 
+```bash
 # pnpm
 pnpm create theo
+
+# yarn
+yarn create theo
 
 # bun
 bun create theo
@@ -65,8 +68,8 @@ bun create theo
 
 | Template | Stack | Type | Default Port |
 |----------|-------|------|:------------:|
-| `node-nextjs` | Next.js (App Router) | Frontend / SSR | 3000 |
-| `fullstack-nextjs` | Next.js + API Routes | Fullstack | 3000 |
+| `node-nextjs` | Next.js 15 (App Router, TypeScript) | Frontend / SSR | 3000 |
+| `fullstack-nextjs` | Next.js 15 + API Routes (TypeScript) | Fullstack | 3000 |
 
 ### Monorepo
 
@@ -86,16 +89,27 @@ bun create theo
 |----------|-------|:------------:|
 | `node-worker` | Node.js | 3000 |
 
+### External Templates
+
+Use any GitHub repository as a template:
+
+```bash
+npm create theo@latest my-app --template user/repo
+npm create theo@latest my-app --template user/repo#branch
+```
+
 Every template is production-ready out of the box: CORS, structured JSON logging, error handling, graceful shutdown, health endpoints (`GET /health` + `GET /ready`), Dockerfile, linting, example test, and a CI workflow.
 
 ## CLI Options
 
 | Flag | Description |
 |------|-------------|
-| `--template`, `-t` | Skip template prompt (`node-express`, `go-api`, `php-slim`, etc.) |
+| `--template`, `-t` | Skip template prompt (`node-express`, `go-api`, `php-slim`, `user/repo`, etc.) |
 | `--styling`, `-s` | Styling for frontend templates (`tailwind`, `shadcn`, `daisyui`, etc.) |
 | `--database`, `-d` | Add PostgreSQL with ORM (Prisma, GORM, SQLAlchemy, Diesel, Spring Data JPA, Sequel, or Doctrine) |
 | `--add`, `-a` | Add modules: `redis`, `auth-jwt`, `auth-oauth`, `queue` (comma-separated) |
+| `--dry-run` | Preview what would be created without writing any files |
+| `--verbose`, `-v` | Show detailed output during scaffolding |
 | `--help` | Show help |
 
 ```bash
@@ -111,15 +125,93 @@ npm create theo@latest my-app -t node-express -d --add redis,auth-jwt
 # Full stack: database + Redis + Auth + Queue
 npm create theo@latest my-app -t node-express -d --add redis,auth-jwt,queue
 
-# With OAuth/OIDC instead of JWT
-npm create theo@latest my-app -t go-api --add auth-oauth
+# Frontend with Tailwind + shadcn/ui
+npm create theo@latest my-app -t node-nextjs -s shadcn
 
-# PHP with all addons
-npm create theo@latest my-app -t php-slim -d --add redis,auth-jwt,queue
+# Preview without creating files
+npm create theo@latest my-app -t node-express -d --add redis --dry-run
+
+# External GitHub template
+npm create theo@latest my-app -t user/repo
 
 # CI mode (no prompts, no install, no git init)
 CI=true npx create-theo my-app --template node-express
 ```
+
+## Frontend Templates
+
+Frontend templates (`node-nextjs`, `fullstack-nextjs`, `monorepo-turbo`) are TypeScript-first and include modern tooling out of the box:
+
+| Feature | Implementation |
+|---------|---------------|
+| **TypeScript** | `.tsx`/`.ts` throughout, strict mode, `@/*` path aliases |
+| **React 19** | Latest stable with Server Components support |
+| **Next.js 15** | App Router, Turbopack dev server, standalone output |
+| **Tailwind CSS v4** | `@import "tailwindcss"` — zero config, no `tailwind.config.js` |
+| **Dark mode** | ThemeProvider with `next-themes`, system preference detection |
+| **shadcn/ui ready** | `components.json` configured — run `npx shadcn add button` |
+| **`cn()` utility** | `lib/utils.ts` with `clsx` + `tailwind-merge` |
+| **Prettier** | `prettier-plugin-tailwindcss` for automatic class sorting |
+| **Type checking** | `npm run typecheck` via `tsc --noEmit` |
+
+### Project structure (node-nextjs)
+
+```
+my-app/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx          # Root layout with ThemeProvider
+│   │   ├── page.tsx            # Home page
+│   │   ├── error.tsx           # Error boundary
+│   │   ├── not-found.tsx       # 404 page
+│   │   └── api/
+│   │       ├── health/route.ts # Liveness probe
+│   │       └── ready/route.ts  # Readiness probe
+│   ├── middleware.ts           # Request logging
+│   └── instrumentation.ts     # Logger + graceful shutdown
+├── components/
+│   └── theme-provider.tsx      # Dark mode provider
+├── lib/
+│   └── utils.ts                # cn() utility
+├── hooks/                      # Custom hooks (empty, ready to use)
+├── components.json             # shadcn/ui CLI config
+├── tsconfig.json               # TypeScript with @/* aliases
+├── next.config.mjs             # ESM config, standalone output
+├── .prettierrc                 # Tailwind class sorting
+├── Dockerfile                  # Production-optimized
+└── theo.yaml                   # Deploy config
+```
+
+## Styling
+
+Pass `--styling` to choose a CSS framework for frontend templates. Applied at scaffold time with full configuration.
+
+| Option | What you get |
+|--------|-------------|
+| `none` | Plain CSS (default) |
+| `tailwind` | Tailwind CSS v4 with `@tailwindcss/postcss` |
+| `shadcn` | Tailwind v4 + shadcn/ui (OKLCH colors, dark mode, `@theme inline`, `tw-animate-css`) |
+| `daisyui` | Tailwind v4 + daisyUI component classes |
+| `chakra` | Chakra UI with emotion + ChakraProvider |
+| `mantine` | Mantine with PostCSS preset + MantineProvider |
+| `bootstrap` | Bootstrap 5 |
+| `bulma` | Bulma CSS |
+
+### shadcn/ui integration
+
+When you choose `shadcn`, the template comes fully configured:
+
+```bash
+# Scaffold with shadcn
+npm create theo@latest my-app -t node-nextjs -s shadcn
+
+# Then add components
+cd my-app
+npx shadcn add button
+npx shadcn add card dialog
+```
+
+The generated `globals.css` includes a complete OKLCH color system with 44 CSS custom properties for light and dark modes, mapped to Tailwind utilities via `@theme inline`.
 
 ## Add-on Modules
 
@@ -142,8 +234,6 @@ Composable modules added at scaffold time via `--add` or interactive checkbox pr
 | Auth JWT | jsonwebtoken | golang-jwt | pyjwt | jsonwebtoken crate | JJWT | ruby-jwt | firebase/php-jwt |
 | Auth OAuth | openid-client | go-oidc | authlib | openidconnect | Spring OAuth2 | omniauth | Guzzle |
 | Queue | BullMQ | Asynq | arq | — | — | — | Symfony Messenger |
-
-Framework-specific variants: Fastify uses `src/plugins/auth.js` with fastify-plugin, NestJS uses `src/guards/auth.guard.ts` with `@Injectable`.
 
 ## Database
 
@@ -203,14 +293,68 @@ commands:
 
 Monorepo templates include per-app commands under each app definition.
 
+## Package Manager Detection
+
+The CLI auto-detects which package manager invoked it and adapts:
+
+| Package Manager | Detection | Install flags |
+|----------------|-----------|--------------|
+| npm | Default | `--no-fund --no-audit --loglevel=error` |
+| pnpm | `npm_config_user_agent` | Standard |
+| yarn | `npm_config_user_agent` | `--no-fund` |
+| bun | `npm_config_user_agent` or runtime | Standard |
+
+Output instructions adapt automatically (e.g., `pnpm run dev` instead of `npm run dev`). Install noise (funding, audit, ads) is suppressed for a clean experience.
+
+## Preview Mode
+
+Preview what a scaffold would create without writing any files:
+
+```bash
+npm create theo@latest my-app -t node-express -d --add redis,auth-jwt --dry-run
+```
+
+```
+  Dry run — no files will be created
+
+  Project:  my-app
+  Template: Node.js — Express
+  Database: PostgreSQL (Prisma)
+  Modules:  Redis, Auth (JWT)
+
+  Files that would be created in ./my-app/
+
+    .dockerignore
+    .env
+    .env.example
+    .github/workflows/ci.yml
+    .gitignore
+    Dockerfile
+    README.md
+    docker-compose.yml
+    package.json
+    prisma/schema.prisma
+    src/index.js
+    src/lib/db.js
+    src/lib/queue.js
+    src/lib/redis.js
+    src/middleware/auth.js
+    tests/health.test.js
+    theo.yaml
+
+  Total: 17 files
+```
+
 ## Why create-theo?
 
-- **Production-ready from day one.** CORS, structured logging, error handling, graceful shutdown, Dockerfile, tests, linting — the things every project needs but nobody wants to configure. Not hello world.
+- **Production-ready from day one.** CORS, structured logging, error handling, graceful shutdown, Dockerfile, tests, linting — the things every project needs but nobody wants to configure.
 - **One CLI, 7 languages.** Node.js, Go, Python, Rust, Java, Ruby, PHP — same experience. Pick your language and get a real project, not a toy.
+- **TypeScript-first frontend.** React 19, Next.js 15, Tailwind v4, dark mode, shadcn/ui ready. Not a 2022 starter kit.
 - **Composable modules.** Add Redis, JWT auth, or job queues with a flag. Get working code with docker-compose, not boilerplate stubs.
 - **Database-ready.** Pass `--database` and get a connected ORM, docker-compose with Postgres, and migration scripts.
-- **Kubernetes-native.** Every template ships with `/health` (liveness) and `/ready` (readiness) probes, Dockerfile, and graceful shutdown.
+- **Kubernetes-native.** Every template ships with `/health` and `/ready` probes, Dockerfile, and graceful shutdown.
 - **Deploy anywhere.** Every template works with [Theo](https://usetheo.dev), Docker, Railway, Fly.io, or any container platform. No vendor lock-in.
+- **Smart CLI.** Auto-detects your package manager, supports `--dry-run` preview, `--verbose` debugging, external GitHub templates, and directory overwrite confirmation.
 
 ## Prerequisites
 
@@ -244,14 +388,14 @@ bash scripts/validate-templates.sh
 # Install and build the CLI
 cd create-theo && npm install && npm run build
 
-# Run tests (184 tests across 11 suites)
+# Run tests (205 tests across 12 suites)
 npm test
 
-# Watch mode
+# Stub mode (fast rebuild during development)
 npm run dev
 
 # Full smoke test (requires all runtimes)
-bash scripts/test-all-templates.sh
+bash scripts/validate-templates.sh
 ```
 
 ## Examples

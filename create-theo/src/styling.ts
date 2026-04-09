@@ -20,9 +20,8 @@ export const stylingOptions: StylingOption[] = [
     description: "Utility-first CSS framework",
     dependencies: {},
     devDependencies: {
-      tailwindcss: "^3.4.0",
-      postcss: "^8.4.0",
-      autoprefixer: "^10.4.0",
+      tailwindcss: "^4.0.0",
+      "@tailwindcss/postcss": "^4.0.0",
     },
   },
   {
@@ -31,16 +30,14 @@ export const stylingOptions: StylingOption[] = [
     description: "Beautifully designed components built with Radix UI and Tailwind",
     dependencies: {
       "tailwind-merge": "^2.6.0",
-      "class-variance-authority": "^0.7.0",
       clsx: "^2.1.0",
       "lucide-react": "^0.460.0",
       "@radix-ui/react-slot": "^1.1.0",
     },
     devDependencies: {
-      tailwindcss: "^3.4.0",
-      postcss: "^8.4.0",
-      autoprefixer: "^10.4.0",
-      "tailwindcss-animate": "^1.0.7",
+      tailwindcss: "^4.0.0",
+      "@tailwindcss/postcss": "^4.0.0",
+      "tw-animate-css": "^1.0.0",
     },
   },
   {
@@ -49,9 +46,8 @@ export const stylingOptions: StylingOption[] = [
     description: "Component library built on Tailwind CSS",
     dependencies: {},
     devDependencies: {
-      tailwindcss: "^3.4.0",
-      postcss: "^8.4.0",
-      autoprefixer: "^10.4.0",
+      tailwindcss: "^4.0.0",
+      "@tailwindcss/postcss": "^4.0.0",
       daisyui: "^4.12.0",
     },
   },

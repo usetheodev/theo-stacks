@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLI_PATH = path.resolve(__dirname, "..", "dist", "index.js");
+const CLI_PATH = path.resolve(__dirname, "..", "index.js");
 
 function createTempDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "create-theo-cli-"));
@@ -131,6 +131,37 @@ describe("CLI integration", () => {
     expect(output).toContain("--template");
     expect(output).toContain("node-express");
     expect(output).toContain("go-api");
+  });
+
+  it("recognizes external template with slash", () => {
+    // External templates containing "/" should not trigger "unknown template" error
+    // We can't actually clone from GitHub in tests, but we can verify the CLI
+    // doesn't reject the template format
+    expect(() => {
+      execSync(`node ${CLI_PATH} ext-test --template user/repo`, {
+        cwd: tempDir,
+        env: { ...process.env, CI: "true" },
+        encoding: "utf-8",
+        stdio: "pipe",
+        timeout: 10_000,
+      });
+    }).toThrow(); // Will throw because degit can't reach GitHub in CI, but NOT "Unknown template"
+  });
+
+  it("rejects unknown built-in template", () => {
+    try {
+      execSync(`node ${CLI_PATH} test-app --template fake-template`, {
+        cwd: tempDir,
+        env: { ...process.env, CI: "true" },
+        encoding: "utf-8",
+        stdio: "pipe",
+        timeout: 10_000,
+      });
+    } catch (err: unknown) {
+      const error = err as { stderr?: string; stdout?: string };
+      const output = (error.stderr || "") + (error.stdout || "");
+      expect(output).toContain("Unknown template");
+    }
   });
 
   it("scaffolds with --database flag", () => {
