@@ -20,10 +20,8 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: npm
-          cache-dependency-path: create-theo/package-lock.json
 
       - name: Sync version from tag
         working-directory: create-theo
@@ -68,7 +66,7 @@ jobs:
     steps:
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Wait for npm propagation
         run: sleep 30

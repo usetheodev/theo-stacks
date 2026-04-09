@@ -14,7 +14,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/create-theo"><img src="https://img.shields.io/npm/v/create-theo.svg" alt="npm version" /></a>
   <a href="https://www.npmjs.com/package/create-theo"><img src="https://img.shields.io/npm/dm/create-theo.svg" alt="monthly downloads" /></a>
-  <a href="https://github.com/usetheodev/theo-monorepos/blob/main/LICENSE"><img src="https://img.shields.io/github/license/usetheodev/theo-monorepos.svg" alt="license" /></a>
+  <a href="https://github.com/usetheodev/theo-stacks/blob/main/LICENSE"><img src="https://img.shields.io/github/license/usetheodev/theo-stacks.svg" alt="license" /></a>
 </p>
 
 <p align="center">

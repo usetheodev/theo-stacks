@@ -29,7 +29,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/usetheodev/theo-monorepos"
+    "url": "https://github.com/usetheodev/theo-stacks"
   },
   "homepage": "https://usetheo.dev",
   "engines": {
