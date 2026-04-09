@@ -14,7 +14,7 @@
   "scripts": {
     "build": "node scripts/copy-templates.js && unbuild",
     "dev": "unbuild --stub",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "prepack": "node scripts/dont-publish-alpha-as-latest.cjs",
     "prepublishOnly": "npm run build"
   },
