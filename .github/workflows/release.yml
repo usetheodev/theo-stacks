@@ -16,9 +16,9 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: create-theo
-        run: npm ci
+        run: npm install --no-fund --no-audit
 
       - name: Build
         working-directory: create-theo
@@ -66,7 +66,7 @@ jobs:
     needs: publish
 
     steps:
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -85,7 +85,8 @@ jobs:
 
       - name: Scaffold and verify go-api
         run: |
-          npx create-theo@latest smoke-go --template go-api
+          VERSION="${GITHUB_REF_NAME#v}"
+          npx create-theo@${VERSION} smoke-go --template go-api
           cd smoke-go
           test -f theo.yaml
           test -f main.go
@@ -93,7 +94,8 @@ jobs:
 
       - name: Scaffold and verify python-fastapi
         run: |
-          npx create-theo@latest smoke-python --template python-fastapi
+          VERSION="${GITHUB_REF_NAME#v}"
+          npx create-theo@${VERSION} smoke-python --template python-fastapi
           cd smoke-python
           test -f theo.yaml
           test -f main.py
