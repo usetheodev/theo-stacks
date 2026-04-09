@@ -14,7 +14,6 @@ export default {
       "ts-jest",
       {
         useESM: true,
-        tsconfig: "tsconfig.test.json",
         diagnostics: {
           ignoreDiagnostics: [151002],
         },
