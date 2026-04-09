@@ -271,27 +271,7 @@ When combined with `--add redis`, both Postgres and Redis appear in the same `do
 | **Example test** | Health endpoint test (Jest, Go testing, pytest, cargo test, JUnit, Minitest, PHPUnit) |
 | **Linting** | ESLint, go vet, ruff, clippy, Spotless, RuboCop, PHPStan |
 | **CI** | GitHub Actions workflow |
-| **`theo.yaml`** | Project config with standardized `commands` section |
-
-### `theo.yaml` Commands
-
-Every template includes a `commands` section in `theo.yaml` — standardized wrappers that abstract language-specific tooling:
-
-```yaml
-commands:
-  dev: "npm run dev"        # Start development server
-  build: "npm run build"    # Build for production
-  test: "npm test"          # Run tests
-  lint: "npm run lint"      # Run linter
-  format: "npm run format"  # Format code
-  security: "npm audit"     # Security audit
-```
-
-| Command | Node.js | Go | Python | Rust | Java | Ruby | PHP |
-|---------|---------|-----|--------|------|------|------|-----|
-| `security` | `npm audit` | `govulncheck` | `pip-audit` | `cargo audit` | `dependencyCheckAnalyze` | `bundle audit` | `composer audit` |
-
-Monorepo templates include per-app commands under each app definition.
+| **`theo.yaml`** | Project config for deployment (apps, framework, ports) |
 
 ## Package Manager Detection
 
@@ -369,7 +349,7 @@ We welcome contributions! Whether it's a new template, a module, a bug fix, or d
 ### Adding a template
 
 1. Create `templates/<template-id>/` with all required files
-2. Include `theo.yaml` (with `commands` section), `Dockerfile`, `dockerignore` (without dot), `gitignore` (without dot), and `README.md`
+2. Include `theo.yaml`, `Dockerfile`, `dockerignore` (without dot), `gitignore` (without dot), and `README.md`
 3. Implement `GET /health`, `GET /ready`, `PORT` env support
 4. Add CORS, structured JSON logging, error handling, and graceful shutdown
 5. Add linting config and at least one example test

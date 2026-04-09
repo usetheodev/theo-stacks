@@ -34,7 +34,11 @@
 - PostCSS config uses `@tailwindcss/postcss` in `.mjs` format (replaces tailwindcss + autoprefixer)
 - shadcn styling option now uses OKLCH color space (replaces HSL), `tw-animate-css` (replaces `tailwindcss-animate`)
 - Monorepo shared package migrated to TypeScript with `exports` field
-- Hardened `.gitignore` for all 19 templates with comprehensive security rules: credentials (`*.pem`, `*.key`, `service-account*.json`), IDE files, OS files, coverage reports, and language-specific build artifacts. Environment variables now use `.env.*` with `!.env.example` safeguard
+- Hardened `.gitignore` for all 19 templates with comprehensive security rules: credentials (`*.pem`, `*.key`, `service-account*.json`), IDE files, OS files, coverage reports, and language-specific build artifacts
+
+### Removed
+- `commands` section from all 19 `theo.yaml` files — deploy config now contains only `version`, `project`, and `apps`
+- `security` audit command entries from `theo.yaml` (security tooling remains available via package scripts)
 
 ### Added
 - API catch-all 404 route (`/api/[...not-found]`) to `node-nextjs`, `fullstack-nextjs`, and `monorepo-turbo` web app
