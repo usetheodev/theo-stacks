@@ -1,4 +1,5 @@
 import type { TemplateType } from "./templates.js";
+import { AddonConflictError } from "./errors.js";
 
 export type AddonId = "redis" | "auth-jwt" | "auth-oauth" | "queue";
 
@@ -46,7 +47,7 @@ export function resolveAddonDependencies(selected: AddonId[]): AddonId[] {
 
   // auth-jwt and auth-oauth are mutually exclusive
   if (result.includes("auth-jwt") && result.includes("auth-oauth")) {
-    throw new Error("Cannot select both JWT and OAuth auth. Pick one.");
+    throw new AddonConflictError("JWT", "OAuth");
   }
 
   if (result.includes("queue") && !result.includes("redis")) {

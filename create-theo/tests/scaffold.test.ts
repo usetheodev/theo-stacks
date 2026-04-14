@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { scaffold, dryRunScaffold } from "../src/scaffold.js";
+import { scaffold, dryRunScaffold } from "../src/scaffold/index.js";
 import { getTemplate, listTemplateIds } from "../src/templates.js";
 import { getStylingOption } from "../src/styling.js";
 

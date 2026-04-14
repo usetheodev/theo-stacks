@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { scaffold } from "../src/scaffold.js";
+import { scaffold } from "../src/scaffold/index.js";
 import { getTemplate } from "../src/templates.js";
 import { supportsDatabase, getOrmForLanguage } from "../src/database.js";
 
