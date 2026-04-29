@@ -7,12 +7,13 @@ import chalk from "chalk";
 import ora from "ora";
 import { confirm } from "@inquirer/prompts";
 import { promptUser } from "./prompts.js";
-import { scaffold, installNodeDeps, dryRunScaffold, scaffoldExternal } from "./scaffold.js";
+import { scaffold, installNodeDeps, dryRunScaffold, scaffoldExternal } from "./scaffold/index.js";
 import { printSuccess, printDryRun } from "./output.js";
 import { getTemplate, listTemplateIds } from "./templates.js";
 import { getStylingOption, listStylingIds } from "./styling.js";
 import { listAddonIds } from "./addons.js";
 import { detectPackageManager } from "./packageManager.js";
+import { parseHooks, runPostScaffoldHook } from "./hooks.js";
 
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
@@ -134,7 +135,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { projectName, template, styling, database, addons } = await promptUser(
+  const choices = await promptUser(
     nameArg,
     templateArg,
     stylingArg,
@@ -142,7 +143,52 @@ async function main(): Promise<void> {
     addArg,
     isCI,
   );
+  const { projectName, template, styling, database, addons } = choices;
   const targetDir = path.resolve(process.cwd(), projectName);
+
+  // Handle external template from interactive prompt
+  if (choices.externalRepo) {
+    if (fs.existsSync(targetDir)) {
+      const contents = fs.readdirSync(targetDir);
+      if (contents.length > 0) {
+        const overwrite = await confirm({
+          message: `Directory "${projectName}" already exists and is not empty. Overwrite?`,
+          default: false,
+        });
+        if (!overwrite) {
+          console.log(chalk.dim("  Aborted."));
+          process.exit(0);
+        }
+        fs.rmSync(targetDir, { recursive: true, force: true });
+      }
+    }
+
+    const spinner = ora({ text: `Cloning ${choices.externalRepo}...`, color: "cyan" });
+    spinner.start();
+
+    try {
+      await scaffoldExternal(choices.externalRepo, targetDir, projectName, verbose);
+      spinner.succeed(chalk.green("Done!"));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      spinner.fail(chalk.red("Failed"));
+      console.error(chalk.red(`\n  ${message}`));
+      process.exit(1);
+    }
+
+    console.log();
+    console.log(
+      chalk.green("  Created ") +
+        chalk.bold(projectName) +
+        chalk.green(" from ") +
+        chalk.cyan(choices.externalRepo),
+    );
+    console.log();
+    console.log(chalk.bold("  Get started:"));
+    console.log(chalk.cyan(`    cd ${projectName}`));
+    console.log();
+    return;
+  }
 
   // Check if target directory exists and is not empty
   if (fs.existsSync(targetDir)) {
@@ -205,6 +251,17 @@ async function main(): Promise<void> {
     }
     console.error(chalk.red(`\n  ${message}`));
     process.exit(1);
+  }
+
+  // Run post-scaffold hooks (non-fatal)
+  const hooks = parseHooks(targetDir);
+  if (hooks.postscaffold) {
+    if (verbose) console.error(`  [verbose] Running post-scaffold hook: ${hooks.postscaffold}`);
+    try {
+      runPostScaffoldHook(targetDir, hooks.postscaffold, verbose);
+    } catch {
+      warnings.push(`Post-scaffold hook failed: ${hooks.postscaffold}`);
+    }
   }
 
   // Post-scaffold steps are non-fatal — the project files are already created

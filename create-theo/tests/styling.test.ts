@@ -7,7 +7,7 @@ import {
   listStylingIds,
   hasFrontend,
 } from "../src/styling.js";
-import { scaffold } from "../src/scaffold.js";
+import { scaffold } from "../src/scaffold/index.js";
 import { getTemplate } from "../src/templates.js";
 
 function createTempDir(): string {

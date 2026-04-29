@@ -26,6 +26,7 @@ export interface UserChoices {
   styling: StylingOption | null;
   database: boolean;
   addons: AddonId[];
+  externalRepo?: string;
 }
 
 export async function promptUser(
@@ -57,15 +58,33 @@ export async function promptUser(
       );
     }
   } else {
-    const chosenType = await select({
+    const chosenType = await select<TemplateType | "external">({
       message: "What do you want to build?",
-      choices: templateCategories.map((c) => ({
-        name: `${c.name} — ${c.description}`,
-        value: c.id,
-      })),
+      choices: [
+        ...templateCategories.map((c) => ({
+          name: `${c.name} — ${c.description}`,
+          value: c.id as TemplateType | "external",
+        })),
+        { name: "GitHub — Use a community template (user/repo)", value: "external" as const },
+      ],
     });
 
-    const filtered = getTemplatesByType(chosenType as TemplateType);
+    if (chosenType === "external") {
+      const repo = await input({
+        message: "GitHub repository (user/repo or user/repo#branch):",
+        validate: (val: string) => val.includes("/") || "Must be in format user/repo",
+      });
+      return {
+        projectName,
+        template: { id: "external", name: "External", description: repo, language: "node" as const, type: "api" as const, defaultPort: null },
+        styling: null,
+        database: false,
+        addons: [],
+        externalRepo: repo,
+      };
+    }
+
+    const filtered = getTemplatesByType(chosenType);
 
     if (filtered.length === 1) {
       template = filtered[0];

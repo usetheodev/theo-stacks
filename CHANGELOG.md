@@ -3,6 +3,16 @@
 ## [Unreleased]
 
 ### Added
+- `CLAUDE.md` with AI assistant instructions generated in every scaffolded project — tailored per language, framework, and selected addons (inspired by Encore's LLM instructions)
+- Post-scaffold hooks: optional `hooks.postscaffold` command in `theo.yaml` executed after scaffolding completes (non-fatal)
+- "GitHub Template" option in interactive category prompt for community templates (`user/repo` format)
+- Typed error classes with structured context: `TemplateNotFoundError`, `ScaffoldIOError`, `DependencyInstallError`, `AddonConflictError`
+- `tests/hooks.test.ts` with 6 tests for hook parsing and execution
+
+### Changed
+- Refactored `scaffold.ts` (3149 lines) into 9 focused modules under `src/scaffold/`: types, core, styling, ci, database, infrastructure, redis, auth, queue
+
+### Added
 - ESLint config in node-nextjs and fullstack-nextjs upgraded to ESM (`eslint.config.mjs`) with `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` for proper Next.js linting
 - `scripts/check-consistency.sh` to verify shared configs (.prettierrc, tsconfig, components.json, eslint) stay identical across frontend templates
 - Template consistency check step in CI workflow (runs before template validation)
