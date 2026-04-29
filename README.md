@@ -274,6 +274,14 @@ All database setups include:
 
 When combined with `--add redis`, both Postgres and Redis appear in the same `docker-compose.yml`.
 
+## Build artifacts
+
+theo-stacks templates ship application source code (manifests, source files, configuration). They do **not** ship Dockerfiles. The Theo build pipeline runs [theo-packs](https://github.com/usetheodev/theo-packs) which detects each template's language/framework and generates an optimized multi-stage Dockerfile at deploy time.
+
+If you fork a template and want to deploy outside Theo, run `theopacks-generate` yourself, or write your own Dockerfile and use a non-theo-packs build path.
+
+Committing a `Dockerfile` inside a template directory is an enforced contract violation — a CI test fails the PR (see `tests/no_dockerfiles_test.sh`).
+
 ## What's Included in Every Template
 
 | Feature | Implementation |
@@ -284,8 +292,8 @@ When combined with `--add redis`, both Postgres and Redis appear in the same `do
 | **Graceful shutdown** | SIGTERM/SIGINT handlers with timeout |
 | **Health check** | `GET /health` — liveness probe |
 | **Readiness check** | `GET /ready` — readiness probe (customize for dependency checks) |
-| **Dockerfile** | Production-optimized, multi-stage where applicable |
-| **`.dockerignore`** | Language-specific exclusions |
+| **Dockerfile** | Generated at deploy time by [theo-packs](https://github.com/usetheodev/theo-packs) — not committed |
+| **`.dockerignore`** | Generated at deploy time by theo-packs (per-language template) |
 | **Example test** | Health endpoint test (Jest, Go testing, pytest, cargo test, JUnit, Minitest, PHPUnit) |
 | **Linting** | ESLint, go vet, ruff, clippy, Spotless, RuboCop, PHPStan |
 | **CI** | GitHub Actions workflow |
