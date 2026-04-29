@@ -37,9 +37,16 @@ Verified: `find templates -name Dockerfile -type f | wc -l` returns `0`.
 
 ### Smoke test
 
-`tests/no_dockerfiles_test.sh` is a 1-line `find` test that fails CI if any template ships a Dockerfile. Wired into the `validate-templates` job in `.github/workflows/ci.yml`.
+`tests/no_dockerfiles_test.sh` is a 1-line `find` test that fails when any template ships a Dockerfile.
 
-A future contributor restoring or copying a Dockerfile is caught at PR time, before deploys break.
+**ACTION REQUIRED before merge** — the PR-opening token used to author this branch lacks the `workflow` scope, so `.github/workflows/ci.yml` could not be modified. Wire the test into the `validate-templates` job by adding this step right after `Check template consistency`:
+
+```yaml
+      - name: Enforce single-source-of-truth (no Dockerfiles in templates)
+        run: bash tests/no_dockerfiles_test.sh
+```
+
+The maintainer with `workflow` permission should commit that addition before merging. Without it, the contract is documented but not enforced at PR time.
 
 ## Why now
 
